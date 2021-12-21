@@ -1,0 +1,33 @@
+{
+  "name": "olaris-speech-recog-stream",
+  "version": "1.0.0",
+  "description": "A simple stream object to be used with Olaris Speech Recog API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "v16.13.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MayamaTakeshi/olaris-speech-recog-stream.git"
+  },
+  "keywords": [
+    "olaris",
+    "speech",
+    "recognition",
+    "stream",
+    "websocket"
+  ],
+  "author": "MayamaTakeshi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MayamaTakeshi/olaris-speech-recog-stream/issues"
+  },
+  "homepage": "https://github.com/MayamaTakeshi/olaris-speech-recog-stream#readme",
+  "dependencies": {
+    "request-promise": "^4.2.6",
+    "ws": "^8.4.0"
+  }
+}
