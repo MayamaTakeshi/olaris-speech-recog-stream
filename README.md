@@ -23,7 +23,7 @@ const config = {
 
 const uuid = 'SOME_UNIQUE_IDENTIFIER_FOR_DEBUG_AND_CORRELATION'
 const language = 'ja-JP' // Olaris currently only supports Japanese
-const context = null
+const context = null // Currently this has no use (later it will be used to permit to specify grammar/keywords to improve accuracy)
 
 const ola_stream = new OlarisSpeechRecogStream(uuid, language, context, config)
 
@@ -39,8 +39,8 @@ ola_stream.on('error', err => {
     log(`ola_stream ${uuid} error ${err}`)
 })
 
-// then you can pipe to it
-someReadStream.pipe(ola_jstream)
+// then you can pipe data to it
+someReadStream.pipe(ola_stream)
 
 // or write to it
 ola_stream.write(SOME_DATA)
