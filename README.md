@@ -46,3 +46,4 @@ someReadStream.pipe(ola_jstream)
 ola_stream.write(SOME_DATA)
 
 ```
+
