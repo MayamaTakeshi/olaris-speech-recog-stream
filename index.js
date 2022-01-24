@@ -75,7 +75,11 @@ class OlarisSpeechRecogStream extends Writable {
                     sampling_rate: config.sampling_rate,
                     product_name: config.product_name,
                     organization_id: config.organization_id,
-                    model_alias: 'model_batoner_japanese',
+
+                    model_name: context.model_name,
+                    model_alias: context.model_alias,
+                    words: context.words,
+                    text: context.text,
                 }
 
                 ws.send(JSON.stringify(msg))
