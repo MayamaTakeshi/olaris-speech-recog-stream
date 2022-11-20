@@ -1,13 +1,10 @@
 {
   "name": "olaris-speech-recog-stream",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "A simple stream object to be used with Olaris Speech Recog API",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "engines": {
-    "node": "v16.13.1"
   },
   "repository": {
     "type": "git",
