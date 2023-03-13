@@ -1,6 +1,6 @@
 {
   "name": "olaris-speech-recog-stream",
-  "version": "1.5.3",
+  "version": "1.6.0",
   "description": "A simple stream object to be used with Olaris Speech Recog API",
   "main": "index.js",
   "scripts": {
@@ -24,6 +24,7 @@
   },
   "homepage": "https://github.com/MayamaTakeshi/olaris-speech-recog-stream#readme",
   "dependencies": {
+    "https-proxy-agent": "^5.0.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
     "ws": "^8.4.0"
