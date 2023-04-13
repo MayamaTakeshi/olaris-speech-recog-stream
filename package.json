@@ -1,6 +1,6 @@
 {
   "name": "olaris-speech-recog-stream",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "A simple stream object to be used with Olaris Speech Recog API",
   "main": "index.js",
   "scripts": {

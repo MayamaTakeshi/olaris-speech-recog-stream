@@ -142,37 +142,25 @@ class OlarisSpeechRecogStream extends Writable {
         var buf
         var bufferArray
 
+        /*
         if(this.src_encoding == 'LINEAR16') {
-            if(this.dst_encoding == 'LINEAR16') {
-                buf = []
+            buf = []
 
-                for(var i=0 ; i<data.length/2 ; i++) {
-                    buf[i] = (data[i*2+1] << 8) + data[i*2]
-                }
-
-                bufferArray = Array.prototype.slice.call(buf)
-            } else {
-                buf = []
-
-                for(var i=0 ; i<data.length/2 ; i++) {
-                    var sample = data[i*2] + (data[i*2] << 8)
-                    buf[i] = linear_ulaw.linear2ulaw(sample)
-                }
-
-                bufferArray =  Array.prototype.slice.call(buf)
+            for(var i=0 ; i<data.length/2 ; i++) {
+                buf[i] = (data[i*2+1] << 8) + data[i*2]
             }
+
+            bufferArray = Array.prototype.slice.call(buf)
         } else {
             // Convert from ulaw to L16 little-endian 
 
             buf = []
 
             for(var i=0 ; i<data.length ; i++) {
-                buf[i] = ulaw2linear(data[i])
+                buf[i] = linear_ulaw.ulaw2linear(data[i])
             }
             bufferArray =  Array.prototype.slice.call(buf)
         }
-
-        //console.log(bufferArray)
 
         if(this.dst_encoding == 'LINEAR16') {
             var msg = {
@@ -181,9 +169,13 @@ class OlarisSpeechRecogStream extends Writable {
             }
             this.ws.send(JSON.stringify(msg))
         } else {
-            this.ws.send(buf)
-            //this.ws.send(bufferArray)
+            this.ws.send(data)
         }
+
+        */
+
+        // send always in binary format
+        this.ws.send(data)
 
         callback()
 
