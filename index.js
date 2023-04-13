@@ -100,9 +100,9 @@ class OlarisSpeechRecogStream extends Writable {
 
             ws.onmessage = function (event) {
                 const res = JSON.parse(event.data)
-                //console.log(res)
-                if (res.type === 'end') {
-                    //console.log(res.result)
+                //console.log(res.type)
+                if (res.type === 'end' || res.type === 'final-end') {
+                    //console.log(res)
 
                     self.eventEmitter.emit('data', {
                         transcript: res.result,
