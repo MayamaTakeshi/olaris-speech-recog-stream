@@ -100,6 +100,7 @@ class OlarisSpeechRecogStream extends Writable {
 
             ws.onmessage = function (event) {
                 const res = JSON.parse(event.data)
+                //console.log(res)
                 if (res.type === 'end') {
                     //console.log(res.result)
 
@@ -165,6 +166,13 @@ class OlarisSpeechRecogStream extends Writable {
         callback()
 
         return true
+    }
+
+    request_flush() {
+        var msg = {
+            type: 'final',
+        }
+        this.ws.send(JSON.stringify(msg))
     }
 
     _final(callback) {
