@@ -17,7 +17,7 @@ const config = {
     organization_id: 'YOUR_ORGANIZATION_ID',
     api_key: 'YOUR_API_KEY',
 
-    src_encoding = 'LINEAR16',
+    encoding = 'LINEAR16',
     sampling_rate = 16000,
 }
 
