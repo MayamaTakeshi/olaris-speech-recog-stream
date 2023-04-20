@@ -17,8 +17,8 @@ const config = {
     organization_id: 'YOUR_ORGANIZATION_ID',
     api_key: 'YOUR_API_KEY',
 
-    encoding = 'LINEAR16',
-    sampling_rate = 16000,
+    encoding = 'LINEAR16', // it can be LINEAR16, MULAW or ALAW
+    sampling_rate = 16000, // it can be 16000 (for LINEAR16) or 8000 (for MULAW and ALAW)
 }
 
 const uuid = 'SOME_UNIQUE_IDENTIFIER_FOR_DEBUG_AND_CORRELATION'
