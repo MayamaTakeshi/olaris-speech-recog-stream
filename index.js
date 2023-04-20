@@ -41,12 +41,17 @@ class OlarisSpeechRecogStream extends Writable {
     constructor(uuid, language, context, config) {
         super()
 
+        if(!['LINEAR16', 'MULAW', 'ALAW'].includes(config.encoding)) {
+            throw(`Unsupported encoding ${config.encoding}`)
+        }
+
+        if(config.sampling_rate != 16000 && config.sampling_rate != 8000) {
+            throw(`Unsupported sampling_rate ${config.sampling_rate}`)
+        }
+
         this.uuid = uuid
 
         this.eventEmitter = new EventEmitter()
-
-        this.src_encoding = config.src_encoding
-        this.dst_encoding = config.dst_encoding
 
 		this.ready = false
 
@@ -93,7 +98,7 @@ class OlarisSpeechRecogStream extends Writable {
                     model_alias: context.model_alias,
                     words: context.words,
                     text: context.text,
-                    codec: self.dst_encoding == 'LINEAR16' ? undefined : 'mulaw',
+                    codec: config.encoding == 'LINEAR16' ? undefined : config.encoding.toLowerCase(),
                 }
 
                 console.log(msg)
@@ -143,7 +148,7 @@ class OlarisSpeechRecogStream extends Writable {
         var bufferArray
 
         /*
-        if(this.src_encoding == 'LINEAR16') {
+        if(this.encoding == 'LINEAR16') {
             buf = []
 
             for(var i=0 ; i<data.length/2 ; i++) {
@@ -162,7 +167,7 @@ class OlarisSpeechRecogStream extends Writable {
             bufferArray =  Array.prototype.slice.call(buf)
         }
 
-        if(this.dst_encoding == 'LINEAR16') {
+        if(this.encoding == 'LINEAR16') {
             var msg = {
                 type: 'streamAudio',
                 stream: bufferArray
