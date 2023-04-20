@@ -4,31 +4,33 @@ const { EventEmitter } = require('events')
 
 const WebSocket = require('ws')
 
-const rp = require('request-promise')
+const axios = require('axios')
 
 const linear_ulaw = require('./linear_ulaw.js')
 
+function log(msg) {
+    // not actual error. just avoid writing to stdout
+    console.error(msg)
+}
+
 // issue_one_time_token
 async function issueToken(config) {
-  const options = {
-    method: 'POST',
-    uri: `https://${config.api_base}/v1/issue_token/`,
-    headers: {
-      'accept': 'text/html',
-      'Authorization': `Bearer ${config.api_key}`,
-      'Content-type': 'application/json'
-    },
-    body: {
+  var uri = `https://${config.api_base}/v1/issue_token/`
+  var data = {
       product_name: config.product_name,
       organization_id: config.organization_id,
       user_id: config.user_id
-    },
-    json: true
   }
+  var headers = {
+      'accept': 'text/html',
+      'Authorization': `Bearer ${config.api_key}`,
+      'Content-type': 'application/json'
+  }
+
   let token = null
-  await rp(options)
+  await axios.post(uri, data, {headers})
     .then(res => {
-      token = res
+      token = res.data
     })
     .catch(err => {
       console.error(err)
@@ -62,7 +64,7 @@ class OlarisSpeechRecogStream extends Writable {
         const self = this
 
         const accessToken = await issueToken(config)
-		console.log(`accessToken=${accessToken}`)
+		log(`accessToken=${accessToken}`)
 
         if (accessToken === null) {
             setTimeout(() => {
@@ -86,7 +88,7 @@ class OlarisSpeechRecogStream extends Writable {
             self.ws = ws
 
             ws.onopen = function() {
-				console.log('ws.onopen')
+				log('ws.onopen')
                 let msg = {
                     access_token: accessToken,
                     type: 'start',
@@ -101,7 +103,7 @@ class OlarisSpeechRecogStream extends Writable {
                     codec: config.encoding == 'LINEAR16' ? undefined : config.encoding.toLowerCase(),
                 }
 
-                console.log(msg)
+                log(msg)
                 ws.send(JSON.stringify(msg))
 
 				self.ready = true
@@ -110,9 +112,9 @@ class OlarisSpeechRecogStream extends Writable {
 
             ws.onmessage = function (event) {
                 const res = JSON.parse(event.data)
-                //console.log(res)
+                //log(res)
                 if (res.type === 'end' || res.type === 'final-end') {
-                    //console.log(res)
+                    //log(res)
 
                     self.eventEmitter.emit('data', {
                         transcript: res.result,
@@ -136,10 +138,10 @@ class OlarisSpeechRecogStream extends Writable {
     }
 
     _write(data, enc, callback) {
-        //console.log(`_write got ${data.length}`)
+        //log(`_write got ${data.length}`)
 
 		if(!this.ready) {
-			console.log("not ready")	
+			log("not ready")	
 			callback()
 			return true
 		}
