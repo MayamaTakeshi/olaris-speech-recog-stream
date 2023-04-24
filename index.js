@@ -4,9 +4,12 @@ const { EventEmitter } = require('events')
 
 const WebSocket = require('ws')
 
-const axios = require('axios')
-
 const linear_ulaw = require('./linear_ulaw.js')
+
+const util = require('util');
+const request = require('request')
+
+const promiseRequest = util.promisify(request)
 
 function log(msg) {
     // not actual error. just avoid writing to stdout
@@ -15,7 +18,7 @@ function log(msg) {
 
 // issue_one_time_token
 async function issueToken(config) {
-  var uri = `https://${config.api_base}/v1/issue_token/`
+  var url = `https://${config.api_base}/v1/issue_token/`
   var data = {
       product_name: config.product_name,
       organization_id: config.organization_id,
@@ -28,14 +31,22 @@ async function issueToken(config) {
   }
 
   let token = null
-  await axios.post(uri, data, {headers})
-    .then(res => {
-      token = res.data
-    })
-    .catch(err => {
-      console.error(err)
-    })
-  return token
+
+  const options = {
+    url,
+    method: 'POST',
+    json: true, // Set this to true to automatically stringify the body as JSON
+    body: data,
+    headers,
+  }
+
+  var response = await promiseRequest(options)
+  log(`issueToken got ${JSON.stringify(response)}`)
+  if(response.statusCode == 200) {
+    return response.body
+  } else {
+    return null
+  }
 }
 
 
@@ -55,20 +66,30 @@ class OlarisSpeechRecogStream extends Writable {
 
         this.eventEmitter = new EventEmitter()
 
-		this.ready = false
+        this.ready = false
 
         this.setup_speechrecog(language, context, config)
     }
 
     async setup_speechrecog(language, context, config) {
         const self = this
+        var accessToken
 
-        const accessToken = await issueToken(config)
-		log(`accessToken=${accessToken}`)
+        try {
+            log("before issueToken")
+            accessToken = await issueToken(config)
+            log("after issueToken")
+            log(`accessToken=${accessToken}`)
 
-        if (accessToken === null) {
+            if (!accessToken) {
+                setTimeout(() => {
+                    self.eventEmitter.emit('error', 'could_not_obtain_token')
+                }, 0)
+                return
+            }
+        } catch (err) {
             setTimeout(() => {
-                self.eventEmitter.emit('error', 'could_not_obtain_token')
+                self.eventEmitter.emit('error', `failed when trying to obtain token. err=${err}`)
             }, 0)
             return
         }
@@ -88,38 +109,46 @@ class OlarisSpeechRecogStream extends Writable {
             self.ws = ws
 
             ws.onopen = function() {
-				log('ws.onopen')
-                let msg = {
-                    access_token: accessToken,
-                    type: 'start',
-                    sampling_rate: config.sampling_rate,
-                    product_name: config.product_name,
-                    organization_id: config.organization_id,
+                try {
+                    log('ws.onopen')
+                    let msg = {
+                        access_token: accessToken,
+                        type: 'start',
+                        sampling_rate: config.sampling_rate,
+                        product_name: config.product_name,
+                        organization_id: config.organization_id,
 
-                    model_name: context.model_name,
-                    model_alias: context.model_alias,
-                    words: context.words,
-                    text: context.text,
-                    codec: config.encoding == 'LINEAR16' ? undefined : config.encoding.toLowerCase(),
+                        model_name: context.model_name,
+                        model_alias: context.model_alias,
+                        words: context.words,
+                        text: context.text,
+                        codec: config.encoding == 'LINEAR16' ? undefined : config.encoding.toLowerCase(),
+                    }
+
+                    log(msg)
+                    ws.send(JSON.stringify(msg))
+
+                    self.ready = true
+                    self.eventEmitter.emit('ready')
+                } catch (err) {
+                    self.eventEmitter.emit('error', err)
                 }
-
-                log(msg)
-                ws.send(JSON.stringify(msg))
-
-				self.ready = true
-                self.eventEmitter.emit('ready')
             }
 
             ws.onmessage = function (event) {
-                const res = JSON.parse(event.data)
-                //log(res)
-                if (res.type === 'end' || res.type === 'final-end') {
+                try {
+                    const res = JSON.parse(event.data)
                     //log(res)
+                    if (res.type === 'end' || res.type === 'final-end') {
+                        //log(res)
 
-                    self.eventEmitter.emit('data', {
-                        transcript: res.result,
-                        confidence: 1.0,
-                    })
+                        self.eventEmitter.emit('data', {
+                            transcript: res.result,
+                            confidence: 1.0,
+                        })
+                    }
+                } catch (err) {
+                    self.eventEmitter.emit('error', err)
                 }
             }
         } catch (err) {
@@ -197,6 +226,7 @@ class OlarisSpeechRecogStream extends Writable {
     }
 
     _final(callback) {
+        //log("OlarisSpeechRecogStream closed")
         this.ready = false
 
         this.eventEmitter.removeAllListeners()
