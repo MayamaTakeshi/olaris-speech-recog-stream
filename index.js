@@ -7,18 +7,43 @@ const WebSocket = require('ws')
 const linear_ulaw = require('./linear_ulaw.js')
 
 const util = require('util');
-const request = require('request')
-
-const promiseRequest = util.promisify(request)
 
 function log(msg) {
     // not actual error. just avoid writing to stdout
     console.error(msg)
 }
 
-// issue_one_time_token
+let gotPromise;
+let hpaPromise;
+
+async function loadGotModule() {
+  if (!gotPromise) {
+    gotPromise = import('got');
+  }
+  return gotPromise;
+}
+
+async function loadHpAgentModule() {
+  if (!hpaPromise) {
+    hpaPromise = import('hpagent');
+  }
+  return hpaPromise;
+}
+
 async function issueToken(config) {
-  var url = `https://${config.api_base}/v1/issue_token/`
+  console.log("issueToken", config)
+  var got;
+  var hpagent;
+
+  try {
+    got = await loadGotModule();
+    hpagent = await loadHpAgentModule();
+    console.log('got/hpagent are ready')
+  } catch (error) {
+    console.error(error);
+  }
+
+  var url = `${config.no_tls ? 'http' : 'https'}://${config.api_base}/v1/issue_token/`
   var data = {
       product_name: config.product_name,
       organization_id: config.organization_id,
@@ -30,24 +55,38 @@ async function issueToken(config) {
       'Content-type': 'application/json'
   }
 
-  let token = null
-
   const options = {
-    url,
-    method: 'POST',
-    json: true, // Set this to true to automatically stringify the body as JSON
-    body: data,
+    json: data,
     headers,
   }
 
-  var response = await promiseRequest(options)
-  log(`issueToken got ${JSON.stringify(response)}`)
-  if(response.statusCode == 200) {
-    return response.body
-  } else {
-    return null
+  if(config.proxy) {
+    console.log(config.proxy)
+    options.agent = {
+      https: new hpagent.HttpsProxyAgent({
+        // I'm not sure if these are relevant. For now I will not use them
+        /*
+        keepAlive: true,
+        keepAliveMsecs: 1000,
+        maxSockets: 256,
+        maxFreeSockets: 256,
+        scheduling: 'lifo',
+        */
+        proxy: config.proxy,
+      })
+    }
   }
+  console.log("options:", options)
+
+  console.log("post to ", url)
+  const res = await got.got.post(url, options) 
+  if(res.statusCode == 200) {
+    console.log("token:", res.body)
+    return res.body
+  }
+  return null
 }
+
 
 
 class OlarisSpeechRecogStream extends Writable {
@@ -102,7 +141,7 @@ class OlarisSpeechRecogStream extends Writable {
                 proxyAgent = new HttpsProxyAgent(proxy)
             }
 
-            const ws = new WebSocket(`wss://${config.api_base}/ws/`, {
+            const ws = new WebSocket(`${config.no_tls ? 'ws' : 'wss'}://${config.api_base}/ws/`, {
                 agent: proxyAgent
             })
 
