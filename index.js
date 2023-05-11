@@ -76,6 +76,12 @@ async function issueToken(config) {
       })
     }
   }
+
+  if(!config.reject_unauthorized) {
+    options.https = {
+      rejectUnauthorized: false,
+    }
+  }
   console.log("options:", options)
 
   console.log("post to ", url)
