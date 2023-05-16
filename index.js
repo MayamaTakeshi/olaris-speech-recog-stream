@@ -6,41 +6,36 @@ const WebSocket = require('ws')
 
 const linear_ulaw = require('./linear_ulaw.js')
 
-const util = require('util');
+const util = require('util')
 
-function log(msg) {
-    // not actual error. just avoid writing to stdout
-    console.error(msg)
-}
-
-let gotPromise;
-let hpaPromise;
+let gotPromise
+let hpaPromise
 
 async function loadGotModule() {
   if (!gotPromise) {
-    gotPromise = import('got');
+    gotPromise = import('got')
   }
-  return gotPromise;
+  return gotPromise
 }
 
 async function loadHpAgentModule() {
   if (!hpaPromise) {
-    hpaPromise = import('hpagent');
+    hpaPromise = import('hpagent')
   }
-  return hpaPromise;
+  return hpaPromise
 }
 
-async function issueToken(config) {
-  console.log("issueToken", config)
-  var got;
-  var hpagent;
+async function issueToken(config, log) {
+  log.info(`issueToken using ${JSON.stringify(config)}`)
+  var got
+  var hpagent
 
   try {
-    got = await loadGotModule();
-    hpagent = await loadHpAgentModule();
-    console.log('got/hpagent are ready')
+    got = await loadGotModule()
+    hpagent = await loadHpAgentModule()
+    log.info('got/hpagent are ready')
   } catch (error) {
-    console.error(error);
+    log.error(error)
   }
 
   var url = `${config.no_tls ? 'http' : 'https'}://${config.api_base}/v1/issue_token/`
@@ -61,7 +56,6 @@ async function issueToken(config) {
   }
 
   if(config.proxy) {
-    console.log(config.proxy)
     options.agent = {
       https: new hpagent.HttpsProxyAgent({
         // I'm not sure if these are relevant. For now I will not use them
@@ -82,12 +76,11 @@ async function issueToken(config) {
       rejectUnauthorized: false,
     }
   }
-  console.log("options:", options)
 
-  console.log("post to ", url)
+  log.info(`post to ${url}`)
   const res = await got.got.post(url, options) 
   if(res.statusCode == 200) {
-    console.log("token:", res.body)
+    log.info(`token ${res.body}`)
     return res.body
   }
   return null
@@ -96,7 +89,7 @@ async function issueToken(config) {
 
 
 class OlarisSpeechRecogStream extends Writable {
-    constructor(uuid, language, context, config) {
+    constructor(language, context, config, log) {
         super()
 
         if(!['LINEAR16', 'MULAW', 'ALAW'].includes(config.encoding)) {
@@ -107,24 +100,20 @@ class OlarisSpeechRecogStream extends Writable {
             throw(`Unsupported sampling_rate ${config.sampling_rate}`)
         }
 
-        this.uuid = uuid
-
         this.eventEmitter = new EventEmitter()
 
         this.ready = false
 
-        this.setup_speechrecog(language, context, config)
+        this.setup_speechrecog(language, context, config, log)
     }
 
-    async setup_speechrecog(language, context, config) {
+    async setup_speechrecog(language, context, config, log) {
         const self = this
         var accessToken
 
         try {
-            log("before issueToken")
-            accessToken = await issueToken(config)
-            log("after issueToken")
-            log(`accessToken=${accessToken}`)
+            accessToken = await issueToken(config, log)
+            log.info(`accessToken=${accessToken}`)
 
             if (!accessToken) {
                 setTimeout(() => {
@@ -155,7 +144,7 @@ class OlarisSpeechRecogStream extends Writable {
 
             ws.onopen = function() {
                 try {
-                    log('ws.onopen')
+                    log.info('ws.onopen')
                     let msg = {
                         access_token: accessToken,
                         type: 'start',
@@ -170,7 +159,7 @@ class OlarisSpeechRecogStream extends Writable {
                         codec: config.encoding == 'LINEAR16' ? undefined : config.encoding.toLowerCase(),
                     }
 
-                    log(msg)
+                    log.info(msg)
                     ws.send(JSON.stringify(msg))
 
                     self.ready = true
@@ -183,9 +172,9 @@ class OlarisSpeechRecogStream extends Writable {
             ws.onmessage = function (event) {
                 try {
                     const res = JSON.parse(event.data)
-                    //log(res)
+                    //log.info(res)
                     if (res.type === 'end' || res.type === 'final-end') {
-                        //log(res)
+                        log.info(`got message: type=${res.type} result=${res.result}`)
 
                         self.eventEmitter.emit('data', {
                             transcript: res.result,
@@ -212,10 +201,10 @@ class OlarisSpeechRecogStream extends Writable {
     }
 
     _write(data, enc, callback) {
-        //log(`_write got ${data.length}`)
+        //log.info(`_write got ${data.length}`)
 
 		if(!this.ready) {
-			log("not ready")	
+			log.info("not ready")	
 			callback()
 			return true
 		}
@@ -271,7 +260,7 @@ class OlarisSpeechRecogStream extends Writable {
     }
 
     _final(callback) {
-        //log("OlarisSpeechRecogStream closed")
+        //log.info("OlarisSpeechRecogStream closed")
         this.ready = false
 
         this.eventEmitter.removeAllListeners()
