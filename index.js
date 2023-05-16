@@ -142,6 +142,13 @@ class OlarisSpeechRecogStream extends Writable {
 
             self.ws = ws
 
+            ws.on('error', (error) => {
+                log.error(`WebSocket error occurred: ${error}`);
+                setTimeout(() => {
+                    self.eventEmitter.emit('error', 'ws error')
+                }, 0)
+            })
+
             ws.onopen = function() {
                 try {
                     log.info('ws.onopen')
