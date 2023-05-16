@@ -130,10 +130,10 @@ class OlarisSpeechRecogStream extends Writable {
 
         try {
             var proxyAgent = null
-            if(process.env.https_proxy) {
+            if(config.proxy) {
                 const proxy = process.env.https_proxy
                 const HttpsProxyAgent = require('https-proxy-agent')
-                proxyAgent = new HttpsProxyAgent(proxy)
+                proxyAgent = new HttpsProxyAgent(config.proxy)
             }
 
             const ws = new WebSocket(`${config.no_tls ? 'ws' : 'wss'}://${config.api_base}/ws/`, {
