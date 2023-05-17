@@ -131,7 +131,6 @@ class OlarisSpeechRecogStream extends Writable {
         try {
             var proxyAgent = null
             if(config.proxy) {
-                const proxy = process.env.https_proxy
                 const HttpsProxyAgent = require('https-proxy-agent')
                 proxyAgent = new HttpsProxyAgent(config.proxy)
             }
