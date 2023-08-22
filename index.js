@@ -36,6 +36,7 @@ async function issueToken(config, log) {
     log.info('got/hpagent are ready')
   } catch (error) {
     log.error(error)
+    return null
   }
 
   var url = `${config.no_tls ? 'http' : 'https'}://${config.api_base}/v1/issue_token/`
